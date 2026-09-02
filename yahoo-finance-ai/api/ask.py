@@ -10,7 +10,7 @@ import os
 import sys
 import traceback
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 
 # Make /lib importable when this file runs as a standalone Vercel function
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -18,6 +18,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from lib.yahoo_finance import ask_stock_ai  # noqa: E402
 
 app = Flask(__name__)
+
+PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "..", "public")
+
+
+@app.route("/")
+def index():
+    # Belt-and-suspenders: serves the static UI directly from Flask so it
+    # still works if Vercel routes all traffic to this single entrypoint
+    # instead of serving public/ as a separate static build.
+    return send_from_directory(PUBLIC_DIR, "index.html")
 
 
 @app.route("/api/ask", methods=["POST"])
