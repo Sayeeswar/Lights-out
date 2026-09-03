@@ -1,5 +1,4 @@
 {
-  "$comment": "Static frontend only. /api/* is proxied to the Render service so the browser stays same-origin. Replace the host below with your real Render URL after the service is created.",
   "rewrites": [
     {
       "source": "/api/:path*",
