@@ -2,6 +2,7 @@
 # Vercel deployment so Vercel doesn't try to build it as a function.
 api/
 lib/
+wsgi.py
 requirements.txt
 render.yaml
 runtime.txt

@@ -7,7 +7,7 @@ services:
     rootDir: yahoo-finance-ai
     plan: free            # free tier spins down after ~15 min idle (cold start 30-60s); use "starter" to keep it warm
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn api.ask:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
     healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
