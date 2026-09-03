@@ -51,6 +51,18 @@ def ask():
         }), 500
 
 
+@app.route("/", methods=["GET"])
+def root():
+    return jsonify({
+        "status": "ok",
+        "service": "yahoo-finance-ai API",
+        "endpoints": {
+            "POST /api/ask": "{ \"question\": \"...\" }",
+            "GET /healthz": "liveness probe",
+        },
+    }), 200
+
+
 @app.route("/api/ask", methods=["GET"])
 def usage():
     return jsonify({
