@@ -47,8 +47,13 @@ used. No build step, no framework; open the deployed root URL
 
 The Python API (`pandas` + `numpy` + `yfinance`) is too heavy for a Vercel
 serverless function's 250 MB limit, so it runs on **Render**; **Vercel** hosts
-the static `public/` page and proxies `/api/*` through to Render (see
-`vercel.json`), so the browser only ever talks to the Vercel origin.
+the static frontend and proxies `/api/*` through to Render (see
+`public/vercel.json`), so the browser only ever talks to the Vercel origin.
+
+Vercel's Root Directory is `yahoo-finance-ai/public` — pointing it there (rather
+than at `yahoo-finance-ai`) keeps `api/` out of Vercel's sight so it doesn't try
+to build the Flask app as a function. `.vercelignore` does not do this: it is
+ignored for Git-connected deployments.
 
 ### 1. API on Render
 
@@ -63,9 +68,11 @@ the static `public/` page and proxies `/api/*` through to Render (see
 
 ### 2. Frontend on Vercel
 
-1. Edit `vercel.json` → replace the `destination` host with your real Render URL.
+1. Edit `public/vercel.json` → replace the `destination` host with your real
+   Render URL.
 2. Vercel dashboard → import the repo. Set **Root Directory** to
-   `yahoo-finance-ai`. No env vars needed on Vercel (the key lives on Render).
+   `yahoo-finance-ai/public`. Framework Preset: **Other**. No build command, no
+   env vars (the key lives on Render).
 3. Deploy. The site is at `https://<your-project>.vercel.app/`, and its
    `POST /api/ask` calls are proxied to Render.
 
