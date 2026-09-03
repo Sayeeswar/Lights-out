@@ -1,9 +1,16 @@
 """
-Vercel entrypoint.
+HTTP API for the Yahoo Finance AI assistant.
 
-Vercel's Python runtime auto-detects a WSGI `app` object exported
-from a file under /api and serves it as a serverless function.
-This file becomes reachable at: POST https://<your-app>.vercel.app/api/ask
+A plain WSGI (Flask) app. Deployed on Render:
+
+    gunicorn api.ask:app --bind 0.0.0.0:$PORT
+
+Run locally:
+
+    flask --app api/ask run --port 3000
+
+The frontend (hosted on Vercel) reaches this via a Vercel rewrite that
+proxies /api/* to this service, so requests are same-origin in the browser.
 """
 
 import os
@@ -11,13 +18,18 @@ import sys
 import traceback
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-# Make /lib importable when this file runs as a standalone Vercel function
+# Make /lib importable regardless of the working directory gunicorn starts in.
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from lib.yahoo_finance import ask_stock_ai  # noqa: E402
 
 app = Flask(__name__)
+
+# Public, unauthenticated, read-only API. Defaults to allowing any origin;
+# set CORS_ALLOW_ORIGIN to your frontend URL to lock it down.
+CORS(app, resources={r"/*": {"origins": os.getenv("CORS_ALLOW_ORIGIN", "*")}})
 
 
 @app.route("/api/ask", methods=["POST"])
@@ -33,8 +45,6 @@ def ask():
         return jsonify(result), 200
 
     except Exception as e:
-        # Keep the error shape consistent with the original CLI's
-        # `Error: {type}: {message}` behaviour, just as JSON.
         return jsonify({
             "error": f"{type(e).__name__}: {e}",
             "trace": traceback.format_exc() if os.getenv("DEBUG") else None,
@@ -42,5 +52,14 @@ def ask():
 
 
 @app.route("/api/ask", methods=["GET"])
-def health():
-    return jsonify({"status": "ok", "usage": "POST { \"question\": \"...\" } to this endpoint"}), 200
+def usage():
+    return jsonify({
+        "status": "ok",
+        "usage": "POST { \"question\": \"...\" } to this endpoint",
+    }), 200
+
+
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    """Liveness probe for Render's health check."""
+    return jsonify({"status": "ok"}), 200

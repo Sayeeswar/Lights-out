@@ -29,8 +29,7 @@ used. No build step, no framework; open the deployed root URL
 ## What changed from the CLI version
 
 - The `input()` / `while True` console loop is gone — replaced by a Flask
-  route (`api/ask.py`) that Vercel's Python runtime serves as a serverless
-  function.
+  route (`api/ask.py`) served by gunicorn on Render.
 - Core logic moved into `lib/yahoo_finance.py` so it's a plain importable
   module with no side effects at import time (required for serverless —
   every request may cold-start a fresh process).
@@ -46,14 +45,36 @@ used. No build step, no framework; open the deployed root URL
 
 ## Deploy
 
-1. Push this folder to a GitHub repo (or run `vercel` from inside it
-   with the Vercel CLI installed).
-2. In the Vercel dashboard, import the repo as a new project.
-3. Under **Settings → Environment Variables**, add:
-   - `OPENAI_API_KEY` — required
-   - `OPENAI_MODEL` — optional, defaults to `gpt-5`
-4. Deploy. Your endpoint will be live at:
-   `https://<your-project>.vercel.app/api/ask`
+The Python API (`pandas` + `numpy` + `yfinance`) is too heavy for a Vercel
+serverless function's 250 MB limit, so it runs on **Render**; **Vercel** hosts
+the static `public/` page and proxies `/api/*` through to Render (see
+`vercel.json`), so the browser only ever talks to the Vercel origin.
+
+### 1. API on Render
+
+1. Push the repo to GitHub.
+2. Render → **New + → Blueprint**, point it at this repo. `render.yaml` defines
+   the service (root dir `yahoo-finance-ai`, gunicorn start command,
+   `/healthz` health check, Python 3.12).
+3. When prompted, set `OPENAI_API_KEY` (it's marked `sync: false` so it is not
+   read from the repo). `OPENAI_MODEL` and `CORS_ALLOW_ORIGIN` have defaults.
+4. Note the service URL, e.g. `https://yahoo-finance-ai-api.onrender.com`.
+   Free tier spins down after ~15 min idle — first request then takes 30–60s.
+
+### 2. Frontend on Vercel
+
+1. Edit `vercel.json` → replace the `destination` host with your real Render URL.
+2. Vercel dashboard → import the repo. Set **Root Directory** to
+   `yahoo-finance-ai`. No env vars needed on Vercel (the key lives on Render).
+3. Deploy. The site is at `https://<your-project>.vercel.app/`, and its
+   `POST /api/ask` calls are proxied to Render.
+
+### Alternative: skip the proxy
+
+Instead of the `vercel.json` rewrite you can point the frontend straight at
+Render — set `fetch()` in `public/index.html` to the full Render URL. CORS is
+already handled (`flask-cors`, open by default; restrict with
+`CORS_ALLOW_ORIGIN`).
 
 ## Local development
 
