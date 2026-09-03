@@ -73,6 +73,7 @@ YAHOO_MODULES = {
 
         # News / filings
         "news",
+        "calendarEvents"
         "sec_filings",
     ]
 }
