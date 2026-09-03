@@ -226,6 +226,7 @@ Rules:
 17. If the user asks something ambiguous such as
     "cash that Reliance made", interpret it as cash flow
     and use cashflow.
+18. Use calendarEvents for calendar evennts
 
 Do not invent a submodule that is not in the available list.
 """
@@ -342,6 +343,8 @@ def execute_yahoo_intent(intent: dict):
 
     elif submodule == "sec_filings":
         return make_json_safe(stock.sec_filings)
+    elif submodule == "calemdarEvents"
+         return make_json_safe(stock.calendarEvents)
 
     else:
         raise ValueError(f"Unsupported Yahoo Finance submodule: {submodule}")
