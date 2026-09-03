@@ -342,8 +342,8 @@ def execute_yahoo_intent(intent: dict):
         return make_json_safe(stock.news)
 
     elif submodule == "sec_filings":
-        return make_json_safe(stock.sec_filings)
-    elif submodule == "calemdarEvents":
+       return make_json_safe(stock.sec_filings)
+    elif submodule == "calendarEvents":
          return make_json_safe(stock.calendar)
 
     else:
