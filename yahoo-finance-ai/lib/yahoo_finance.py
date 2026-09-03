@@ -344,7 +344,7 @@ def execute_yahoo_intent(intent: dict):
     elif submodule == "sec_filings":
         return make_json_safe(stock.sec_filings)
     elif submodule == "calemdarEvents":
-         return make_json_safe(stock.Calendars)
+         return make_json_safe(stock.calendar)
 
     else:
         raise ValueError(f"Unsupported Yahoo Finance submodule: {submodule}")
