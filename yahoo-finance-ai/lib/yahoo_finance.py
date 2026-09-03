@@ -73,7 +73,7 @@ YAHOO_MODULES = {
 
         # News / filings
         "news",
-        "calendarEvents"
+        "calendarEvents",
         "sec_filings",
     ]
 }
@@ -226,7 +226,9 @@ Rules:
 17. If the user asks something ambiguous such as
     "cash that Reliance made", interpret it as cash flow
     and use cashflow.
-18. Use calendarEvents for calendar evennts
+18. Use "calendarEvents" for upcoming calendar events (next earnings
+    date, dividend / ex-dividend dates).
+19. Use "sec_filings" for SEC filings.
 
 Do not invent a submodule that is not in the available list.
 """
@@ -342,9 +344,10 @@ def execute_yahoo_intent(intent: dict):
         return make_json_safe(stock.news)
 
     elif submodule == "sec_filings":
-       return make_json_safe(stock.sec_filings)
+        return make_json_safe(stock.sec_filings)
+
     elif submodule == "calendarEvents":
-         return make_json_safe(stock.calendar)
+        return make_json_safe(stock.calendar)
 
     else:
         raise ValueError(f"Unsupported Yahoo Finance submodule: {submodule}")
