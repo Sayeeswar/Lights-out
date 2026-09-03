@@ -23,8 +23,10 @@ from openai import OpenAI
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 
 # Reads OPENAI_API_KEY from the environment automatically.
-# On Vercel: set this in Project Settings -> Environment Variables.
-client = OpenAI()
+# Set it in the Render dashboard -> Environment.
+# Extra retries/timeout so a transient network blip on the host doesn't
+# surface as APIConnectionError on the first (cold-start) request.
+client = OpenAI(timeout=60.0, max_retries=4)
 
 
 # ============================================================

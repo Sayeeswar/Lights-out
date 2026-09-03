@@ -239,6 +239,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
+  // API base. Call the Render service directly (no Vercel proxy in the path,
+  // so no proxy timeout on slow first requests). Empty string = same-origin.
+  const API_BASE = "https://yahoo-finance-ai-api.onrender.com";
+
   const input = document.getElementById("question-input");
   const askBtn = document.getElementById("ask-btn");
   const historyEl = document.getElementById("history");
@@ -261,7 +265,7 @@
     historyEl.prepend(entry);
 
     try {
-      const res = await fetch("/api/ask", {
+      const res = await fetch(API_BASE + "/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
