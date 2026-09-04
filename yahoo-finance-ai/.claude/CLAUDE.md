@@ -13,6 +13,17 @@
 - Do not use `rm -rf` without explicit user confirmation
 - Do not use `chmod 777` on any file or directory
 
+## Running commands
+
+- Any Bash/shell command that runs Python must be handed off to the user to
+  run themselves — do not execute it. This covers `python`, `python3`, `py`,
+  `pip`, `python -m ...`, running any `.py` script, and Python-based runners
+  like `flask`, `gunicorn`, and `pytest`.
+- To hand off, give the user the exact command and ask them to run it with the
+  `! <command>` prefix in the prompt, then wait for their pasted output before
+  continuing.
+- Non-Python commands (`git`, `ls`, `npm`, etc.) may still be run normally.
+
 ## Code Safety
 
 - Validate all user inputs before processing

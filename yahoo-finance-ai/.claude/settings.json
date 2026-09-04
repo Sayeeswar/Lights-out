@@ -38,6 +38,12 @@
             "type": "command",
             "shell": "bash",
             "command": "input=$(cat)\ncase \"$input\" in\n  *\"rm -rf\"*|*\"sudo \"*|*\"chmod 777\"*|*mkfs*|*\"dd if=\"*)\n    echo '{\"systemMessage\":\"WARN: Potentially destructive command detected\"}' ;;\nesac"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "statusMessage": "Checking for Python invocation…",
+            "command": "input=$(cat)\ncase \"$input\" in\n  *'\"command\":\"python'*|*'\"command\":\"pip'*|*'\"command\":\"py '*|*'\"command\":\"flask '*|*'\"command\":\"./'*'.py'*|*'&&python'*|*'&& python'*|*';python'*|*'; python'*|*'|python'*|*'| python'*|*'(python'*|*'( python'*|*'&&pip'*|*'&& pip'*|*';pip'*|*'; pip'*|*'-m pip'*|*'-mpip'*|*pytest*|*gunicorn*|*uvicorn*)\n    echo \"BLOCKED: this command invokes Python. Per .claude/CLAUDE.md, do not run Python yourself. Give the user the exact command and ask them to run it with the ! prefix in the prompt, then wait for their pasted output.\" >&2\n    exit 2 ;;\nesac"
           }
         ]
       }

@@ -5,3 +5,7 @@ openai>=1.40.0
 yfinance>=0.2.40
 pandas>=2.2.0
 numpy>=1.26.0
+
+# Answer formatting: model Markdown -> sanitized HTML for the chat UI.
+markdown>=3.6
+bleach>=6.1.0

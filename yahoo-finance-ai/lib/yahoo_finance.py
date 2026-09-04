@@ -15,6 +15,8 @@ import pandas as pd
 import yfinance as yf
 from openai import OpenAI
 
+from lib.formatting import markdown_to_safe_html
+
 
 # ============================================================
 # Configuration
@@ -357,6 +359,31 @@ def execute_yahoo_intent(intent: dict):
 # Generate final answer
 # ============================================================
 
+# Kept out of the f-string prompt below: the LaTeX example contains braces
+# ( \frac{a}{b}, V_{1} ) that Python's f-string parser would read as fields.
+ANSWER_FORMATTING_RULES = """\
+Formatting (reply in GitHub-flavored Markdown, clean and skimmable):
+
+- Start with a direct one- or two-sentence answer as a short paragraph.
+- Use short paragraphs of 2-4 sentences, each separated by a blank line.
+  Never write one long wall of text.
+- Use "- " bullet points for any list of figures, drivers, or comparisons -
+  one point per line. Do not use a bullet for a single item.
+- Add a "## " or "### " heading only when the answer has two or more
+  distinct sections. Skip headings for a short answer.
+- Use a Markdown table when comparing the same metric across several periods.
+- Put key numbers in **bold** (e.g. **$4.2 billion**). Never bold a whole
+  sentence.
+- Write every mathematical expression in LaTeX: \\( ... \\) inline and
+  \\[ ... \\] for a displayed equation. For example a growth rate is
+  \\( \\frac{V_{1} - V_{0}}{V_{0}} \\times 100\\% \\).
+- Do NOT use $ ... $ or $$ ... $$ for math: a bare $ means US dollars here.
+  Write currency as plain text, e.g. $5.2 billion.
+- Do not add filler such as "I hope this helps" and do not restate the
+  question.
+"""
+
+
 def generate_answer(question: str, intent: dict, yahoo_data) -> str:
 
     data_json = json.dumps(yahoo_data, indent=2, ensure_ascii=False)
@@ -392,6 +419,7 @@ Instructions:
    does not provide it.
 9. Do not fabricate numbers.
 
+{ANSWER_FORMATTING_RULES}
 Give a concise but useful financial answer.
 """
 
@@ -505,6 +533,7 @@ def ask_stock_ai(question: str) -> dict:
     return {
         "question": question,
         "intent": intent,
-        "answer": answer,
+        "answer": answer,  # raw Markdown, kept for API compatibility
+        "answer_html": markdown_to_safe_html(answer),  # sanitized, UI-ready
         "chart": chart,  # None when not applicable
     }

@@ -15,9 +15,39 @@ Response:
 {
   "question": "...",
   "intent": { "ticker": "RELIANCE.NS", "module": "ticker", "submodule": "cashflow", "parameters": {}, "reason": "..." },
-  "answer": "..."
+  "answer": "... raw Markdown ...",
+  "answer_html": "... sanitized HTML, Markdown rendered, \\( math \\) left intact ..."
 }
 ```
+
+`answer` is the model's raw Markdown (kept for API compatibility).
+`answer_html` is that Markdown converted to HTML and sanitized server-side
+(`lib/formatting.py`); the UI injects it directly and KaTeX typesets the
+`\( … \)` / `\[ … \]` math in the browser.
+
+## File guide
+
+Flags: 🟢 core — where most work happens · 🟡 occasional — edited now and then ·
+🔴 rarely touched during feature work.
+
+| File | Flag | What it does |
+|------|------|--------------|
+| `lib/yahoo_finance.py` | 🟢 | Core pipeline: LLM intent detection, Yahoo Finance data fetch, final answer generation, and chart-payload shaping. The app's brain. |
+| `lib/formatting.py` | 🟢 | Converts the model's Markdown answer into sanitized HTML and normalizes LaTeX math delimiters so the browser's KaTeX can render them. |
+| `public/index.html` | 🟢 | Frontend markup and styles: dark chat UI layout plus the CSS. Loads Chart.js, KaTeX, and `app.js`; holds no logic itself. |
+| `public/app.js` | 🟢 | All frontend behaviour: sends the question to `/api/ask`, injects the answer HTML, typesets math with KaTeX, draws charts. |
+| `api/ask.py` | 🟢 | Flask app and routes. Validates the POST body, runs `ask_stock_ai`, returns JSON, handles errors and CORS. HTTP entry point. |
+| `requirements.txt` | 🟡 | Python dependency list (Flask, openai, yfinance, pandas, numpy, markdown, bleach). Edited only when adding or bumping a package. |
+| `.env.example` | 🟡 | Template for local environment variables (`OPENAI_API_KEY`, `OPENAI_MODEL`). Copy to `.env` for local dev; production sets these on the host. |
+| `README.md` | 🟡 | Project docs: API shape, Render and Vercel deployment steps, local dev instructions, and this file guide. |
+| `.claude/CLAUDE.md` | 🟡 | Security and code-safety rules for this repo (secrets, permissions, frontend/backend decoupling). Read often, edited rarely. |
+| `wsgi.py` | 🔴 | Gunicorn/Render entry point. Re-exports the Flask app from `api/ask.py` under the conventional name. Stable; no reason to edit. |
+| `render.yaml` | 🔴 | Render deployment blueprint: service root, gunicorn start command, health-check path, Python version. Touched only on infrastructure changes. |
+| `public/vercel.json` | 🔴 | Vercel config: rewrites `/api/*` to the Render service and sets function `maxDuration`. Touched only when hosting changes. |
+| `.env` | 🔴 | Your real local secrets (git-ignored). Set once during setup, not edited during normal development. |
+| `.gitignore` | 🔴 | Lists paths Git ignores (`.env`, `__pycache__`, `.vs`). Edited only when new generated files appear. |
+| `api/__init__.py`, `lib/__init__.py` | 🔴 | Empty markers that make `api/` and `lib/` importable Python packages. Never need editing. |
+| `.claude/settings.json`, `.claude/settings.local.json`, `.claude/mcp.json` | 🔴 | Claude Code tooling config (permissions, MCP servers). Not part of the app; irrelevant to feature work. |
 
 ## UI
 
