@@ -49,3 +49,16 @@
 - When making a change, do not break existing features built on top of the affected code. E.g. a frontend change must not break backend functionality.
 - Keep the frontend and backend decoupled: changing the frontend for design/visual reasons must not change app behavior. All functionality lives in the backend.
 - The frontend is for visual presentation only — it does not call external APIs, hold system prompts for the AI, or contain business logic. Its only job is to display data; everything else happens in the backend.
+
+## File access scope
+
+- Treat `public/` as the only working directory. Do not create, edit, move,
+  rename, or delete any file outside `public/`.
+- Only `public/index.html` and `public/style.css` may be edited. Every other
+  file, including `public/app.js`, is read-only: read it to understand the
+  existing frontend behavior and DOM contract, but never change it.
+- Do not read application source outside `public/` (`api/`, `lib/`, ...) unless
+  the user explicitly asks for it in that message.
+- If a task cannot be completed within `public/index.html` and
+  `public/style.css`, stop and explain what is needed rather than working
+  around this boundary.

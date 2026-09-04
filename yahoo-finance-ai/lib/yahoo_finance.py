@@ -356,6 +356,87 @@ def execute_yahoo_intent(intent: dict):
 
 
 # ============================================================
+# Statement period ordering
+# ============================================================
+
+# Submodules whose cleaned shape is {row_label: {period_str: value}} and
+# therefore need their periods ordered before we hand them to the model.
+STATEMENT_SUBMODULES = {
+    "income_stmt", "quarterly_income_stmt",
+    "balance_sheet", "quarterly_balance_sheet",
+    "cashflow", "quarterly_cashflow",
+}
+
+
+def order_statement_periods(period_labels, today=None, annual=True, keep=6):
+    """
+    Given the period labels from a financial statement (ISO date strings
+    such as "2025-03-31", occasionally a non-date like "TTM"), return them
+    ordered so the most recent relevant period comes first.
+
+    generate_answer() uses this so a question about "last year" resolves to
+    a predictable column instead of whichever one yfinance happened to list
+    first.
+
+    Policy:
+    - Labels that don't parse as a date (e.g. "TTM") are kept, but placed
+      after every real dated period so they never win "latest".
+    - Periods whose end date is after `today` are dropped: yfinance
+      sometimes carries a column before results are actually reported.
+    - For annual statements, a fiscal year that ends inside the *current*
+      calendar year is treated as "this year's" report, not "last year's",
+      so it is excluded from the resolved list - unless doing so would
+      leave nothing, in which case the filter is skipped.
+    - At most `keep` dated periods are returned, newest first.
+    """
+    if today is None:
+        today = date.today()
+
+    reported = []   # (end_date, label) for periods already reported
+    undated = []    # labels we couldn't parse, e.g. "TTM"
+
+    for label in period_labels:
+        try:
+            end = datetime.strptime(str(label)[:10], "%Y-%m-%d").date()
+        except ValueError:
+            undated.append(label)
+            continue
+        if end <= today:
+            reported.append((end, label))
+
+    before_this_year = [pair for pair in reported if pair[0].year < today.year]
+    chosen = before_this_year if (annual and before_this_year) else reported
+
+    chosen.sort(key=lambda pair: pair[0], reverse=True)
+    return [label for _, label in chosen[:keep]] + undated
+
+
+def reorder_statement_data(yahoo_data, today=None, annual=True):
+    """
+    Apply order_statement_periods() to every row of a cleaned statement so
+    each row's periods share one consistent, newest-first order.
+    Non-dict payloads are returned untouched.
+    """
+    if not isinstance(yahoo_data, dict) or not yahoo_data:
+        return yahoo_data
+
+    all_periods = set()
+    for row in yahoo_data.values():
+        if isinstance(row, dict):
+            all_periods.update(row.keys())
+
+    ordered = order_statement_periods(list(all_periods), today, annual=annual)
+
+    result = {}
+    for row_label, row in yahoo_data.items():
+        if isinstance(row, dict):
+            result[row_label] = {p: row[p] for p in ordered if p in row}
+        else:
+            result[row_label] = row
+    return result
+
+
+# ============================================================
 # Generate final answer
 # ============================================================
 
@@ -364,9 +445,6 @@ def execute_yahoo_intent(intent: dict):
 ANSWER_FORMATTING_RULES = """\
 Formatting (reply in GitHub-flavored Markdown, clean and skimmable):
 
-- Start with a direct one- or two-sentence answer as a short paragraph.
-- Use short paragraphs of 2-4 sentences, each separated by a blank line.
-  Never write one long wall of text.
 - Use "- " bullet points for any list of figures, drivers, or comparisons -
   one point per line. Do not use a bullet for a single item.
 - Add a "## " or "### " heading only when the answer has two or more
@@ -391,6 +469,8 @@ def generate_answer(question: str, intent: dict, yahoo_data) -> str:
     prompt = f"""
 You are a financial research assistant.
 
+Today's date is {date.today().isoformat()}.
+
 Answer the user's question using ONLY the Yahoo Finance
 data supplied below.
 
@@ -403,21 +483,20 @@ Detected intent:
 Yahoo Finance data:
 {data_json}
 
-Instructions:
-
+Instructions:.
 1. Answer the actual question directly.
 2. Do not claim information that is not present in the Yahoo Finance data.
-3. For financial statements, explain the relevant metric rather than
-   dumping the entire statement.
-4. If the user asks "cash made", determine whether the appropriate
-   metric is Operating Cash Flow, Free Cash Flow, Cash Flow from
-   Investing, Cash Flow from Financing, or Change in Cash.
-5. If the question is ambiguous, explain the interpretation you are using.
-6. Preserve the units reported by Yahoo Finance when possible.
-7. If the data contains several years, compare them.
-8. If a value is missing or null, say that the Yahoo Finance data
+3. {STATEMENT_SUBMODULES} are financial statements. Always display them in a table comparing the same metric across several periods.
+
+4.  Always comapre Operating Cash Flow, Free Cash Flow, Cash Flow ,
+   Investing, Cash Flow from Financing, and  Change in Cash in a tabular format.
+
+5. If the data contains several years, compare them.
+6. If a value is missing or null, say that the Yahoo Finance data
    does not provide it.
-9. Do not fabricate numbers.
+8. Include as much information as poosible fron yahoo finance data.
+7. Do not fabricate numbers.
+9. If the user says last year do {date.today().year - 1} and if the user says this year do {date.today().year}.Follow the same for yearly data.
 
 {ANSWER_FORMATTING_RULES}
 Give a concise but useful financial answer.
@@ -527,6 +606,12 @@ def ask_stock_ai(question: str) -> dict:
 
     intent = detect_intent(question)
     yahoo_data = execute_yahoo_intent(intent)
+
+    submodule = intent.get("submodule")
+    if submodule in STATEMENT_SUBMODULES:
+        annual = not submodule.startswith("quarterly_")
+        yahoo_data = reorder_statement_data(yahoo_data, annual=annual)
+
     answer = generate_answer(question, intent, yahoo_data)
     chart = build_chart_payload(intent, yahoo_data)
 

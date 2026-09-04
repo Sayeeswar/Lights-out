@@ -55,7 +55,7 @@ def ask():
 def root():
     return jsonify({
         "status": "ok",
-        "service": "Equity Research AI Assistant API",
+        "service": "yahoo-finance-ai API",
         "endpoints": {
             "POST /api/ask": "{ \"question\": \"...\" }",
             "GET /healthz": "liveness probe",
