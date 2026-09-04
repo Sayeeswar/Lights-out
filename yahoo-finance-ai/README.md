@@ -1,4 +1,4 @@
-# Yahoo Finance AI Assistant — Vercel backend
+# Equity Research AI Assistant — Vercel backend
 
 An HTTP API version of the original CLI script. One endpoint:
 

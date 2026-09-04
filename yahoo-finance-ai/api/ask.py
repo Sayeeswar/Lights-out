@@ -1,5 +1,5 @@
 """
-HTTP API for the Yahoo Finance AI assistant.
+HTTP API for the Equity Research AI assistant.
 
 A plain WSGI (Flask) app. Deployed on Render:
 
@@ -55,7 +55,7 @@ def ask():
 def root():
     return jsonify({
         "status": "ok",
-        "service": "yahoo-finance-ai API",
+        "service": "Equity Research AI Assistant API",
         "endpoints": {
             "POST /api/ask": "{ \"question\": \"...\" }",
             "GET /healthz": "liveness probe",
