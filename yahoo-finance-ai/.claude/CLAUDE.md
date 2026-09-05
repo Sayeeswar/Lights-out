@@ -51,12 +51,3 @@
 - The frontend is for visual presentation only — it does not call external APIs, hold system prompts for the AI, or contain business logic. Its only job is to display data; everything else happens in the backend.
 
 ## File access scope
-
-- Do NOT create, edit, move, rename, or delete any file inside `public/` or `lib/`.
-  These two directories are off-limits for writes.
-- Every other file and directory in the repo is in scope. You may read and modify
-  `api/`, root config files (`vercel.json`, `.vercelignore`, `pyproject.toml`,
-  `requirements.txt`, `render.yaml`, ...), and anything else outside `public/` and `lib/`.
-- Reading files inside `public/` and `lib/` is allowed; only writing to them is not.
-- If a task requires changing a file inside `public/` or `lib/`, stop and explain what
-  is needed rather than editing it.
