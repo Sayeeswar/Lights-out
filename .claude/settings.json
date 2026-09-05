@@ -1,0 +1,64 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(tsc *)",
+      "Bash(eslint *)",
+      "Bash(prettier *)",
+      "Bash(vitest *)",
+      "Bash(jest *)",
+      "Read(*)",
+      "Edit(src/*)",
+      "Edit(tests/*)",
+      "Write(src/*)",
+      "Write(tests/*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)",
+      "Bash(ssh *)",
+      "Bash(> /dev/*)",
+      "Bash(dd *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "input=$(cat)\ncase \"$input\" in\n  *\"rm -rf\"*|*\"sudo \"*|*\"chmod 777\"*|*mkfs*|*\"dd if=\"*)\n    echo '{\"systemMessage\":\"WARN: Potentially destructive command detected\"}' ;;\nesac"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "statusMessage": "Checking for Python invocation…",
+            "command": "input=$(cat)\ncase \"$input\" in\n  *'\"command\":\"python'*|*'\"command\":\"pip'*|*'\"command\":\"py '*|*'\"command\":\"flask '*|*'\"command\":\"./'*'.py'*|*'&&python'*|*'&& python'*|*';python'*|*'; python'*|*'|python'*|*'| python'*|*'(python'*|*'( python'*|*'&&pip'*|*'&& pip'*|*';pip'*|*'; pip'*|*'-m pip'*|*'-mpip'*|*pytest*|*gunicorn*|*uvicorn*)\n    echo \"BLOCKED: this command invokes Python. Per .claude/CLAUDE.md, do not run Python yourself. Give the user the exact command and ask them to run it with the ! prefix in the prompt, then wait for their pasted output.\" >&2\n    exit 2 ;;\nesac"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "input=$(cat)\ncase \"$input\" in\n  *sk-ant-*|*sk-proj-*|*ghp_*|*AKIA*)\n    echo '{\"decision\":\"block\",\"reason\":\"Possible secret pattern detected in written file - review and remove it\"}' ;;\nesac"
+          }
+        ]
+      }
+    ]
+  }
+}

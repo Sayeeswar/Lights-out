@@ -1,0 +1,20 @@
+# Render Blueprint. In Render: New + -> Blueprint -> point at this repo.
+# The repo root is one level up, so rootDir pins the service to this folder.
+services:
+  - type: web
+    name: yahoo-finance-ai-api
+    runtime: python
+    rootDir: yahoo-finance-ai
+    plan: free            # free tier spins down after ~15 min idle (cold start 30-60s); use "starter" to keep it warm
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: OPENAI_API_KEY
+        sync: false        # set this in the Render dashboard, not in the repo
+      - key: OPENAI_MODEL
+        value: gpt-5
+      - key: CORS_ALLOW_ORIGIN
+        value: "*"         # or set to https://<your-app>.vercel.app

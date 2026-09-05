@@ -1,0 +1,570 @@
+/* ============================================================
+   Equity Research AI Assistant — chat interface
+   Dark palette kept from the original; only two blue tints added.
+   Layout: one centred column, sticky top bar, thread that scrolls
+   internally, composer docked at the bottom.
+   ============================================================ */
+
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --raised: #1f2430;
+  --border: #262b36;
+  --border-strong: #33394a;
+  --text: #e6e8ec;
+  --muted: #8a90a0;
+  --accent: #4f7cff;
+  --accent-hover: #6d92ff;
+  --accent-tint: rgba(79, 124, 255, 0.12);
+  --accent-line: rgba(79, 124, 255, 0.22);
+  --error: #ff5c5c;
+
+  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --col: 46rem;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.app {
+  width: 100%;
+  max-width: var(--col);
+  margin: 0 auto;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pill,
+.chip,
+#ask-btn,
+.composer,
+.conv-card,
+.back-btn,
+#question-input {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.brand-name {
+  font-weight: 500;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pill {
+  font: 500 13px/1 var(--sans);
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 13px;
+  cursor: pointer;
+}
+
+.pill:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+#view-toggle[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+/* ---------- Thread ---------- */
+
+.thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+}
+
+.welcome {
+  display: none;
+  margin: auto;
+  max-width: 30rem;
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* Only shown when the thread holds no conversation of any kind. */
+.thread:not(:has(.entry)):not(:has(.conv-card)):not(:has(.empty-note)) .welcome {
+  display: block;
+}
+
+.welcome h1 {
+  margin: 0 0 10px;
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.welcome p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0 16px;
+}
+
+.history:empty {
+  padding: 0;
+}
+
+/* ---------- One Q&A = one turn group ---------- */
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Live thread shows only the most recent Q&A. app.js renders newest
+   first, so every .entry after the first is hidden. Reopening a saved
+   conversation adds a .back-btn as the first child of #history — then
+   the whole transcript is shown, with a divider between turns. */
+.history .entry ~ .entry {
+  display: none;
+}
+
+.history:has(.back-btn) .entry ~ .entry {
+  display: flex;
+}
+
+.history:has(.back-btn) .entry + .entry {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+/* User turn */
+.entry .question {
+  align-self: flex-end;
+  max-width: 85%;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Assistant provenance chips */
+.entry .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.entry .meta:empty {
+  display: none;
+}
+
+.badge {
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 7px;
+}
+
+/* Assistant turn: plain prose, no card, no border */
+.answer {
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--text);
+}
+
+.answer.error {
+  color: var(--error);
+  white-space: pre-wrap;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.answer > *:first-child { margin-top: 0; }
+.answer > *:last-child { margin-bottom: 0; }
+
+.answer p { margin: 0.7em 0; }
+
+.answer h1,
+.answer h2,
+.answer h3,
+.answer h4 {
+  line-height: 1.3;
+  margin: 1.3em 0 0.5em;
+  font-weight: 600;
+}
+.answer h1 { font-size: 1.2rem; }
+.answer h2 { font-size: 1.15rem; }
+.answer h3 { font-size: 1rem; }
+.answer h4 { font-size: 0.9rem; color: var(--muted); }
+
+.answer ul,
+.answer ol {
+  margin: 0.7em 0;
+  padding-left: 1.3em;
+}
+.answer li { margin: 0.3em 0; }
+.answer li::marker { color: var(--muted); }
+
+.answer strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.answer a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+.answer code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.answer pre {
+  margin: 0.8em 0;
+  background: #0c0e13;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+}
+.answer pre code {
+  border: 0;
+  padding: 0;
+  background: none;
+  font-size: 0.82em;
+}
+
+.answer blockquote {
+  margin: 0.8em 0;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid var(--border);
+  color: var(--muted);
+}
+
+/* Financial tables read as terminal data: mono, right-aligned figures */
+.answer table {
+  display: block;
+  width: 100%;
+  margin: 1em 0;
+  border-collapse: collapse;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+.answer th,
+.answer td {
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+.answer th:first-child,
+.answer td:first-child {
+  text-align: left;
+}
+.answer th {
+  background: var(--raised);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.answer .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+}
+
+/* Charted answer */
+.chart-box {
+  position: relative;
+  height: 260px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* Pending answer */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Chat history list ---------- */
+
+.conv-card {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 14px 4px;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.conv-card:hover {
+  background: var(--raised);
+}
+
+.conv-title {
+  font-weight: 500;
+  font-size: 14.5px;
+  overflow-wrap: anywhere;
+}
+
+.conv-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.back-btn {
+  align-self: flex-start;
+  margin-bottom: 20px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  font-size: 12.5px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.empty-note {
+  margin: 8px 4px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- Composer ---------- */
+
+.composer-wrap {
+  flex: none;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.examples::-webkit-scrollbar { display: none; }
+
+/* Once a conversation exists, the prompts collapse to one scrolling line */
+.app:has(.entry) .examples,
+.app:has(.conv-card) .examples {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip {
+  flex: none;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.composer:focus-within {
+  border-color: var(--accent);
+}
+
+#question-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font: 400 15px/1.5 var(--sans);
+  padding: 8px 0;
+}
+
+#question-input::placeholder {
+  color: var(--muted);
+}
+
+/* The whole composer highlights on focus, so the bare field needs no ring */
+#question-input:focus-visible {
+  outline: none;
+}
+
+#ask-btn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#ask-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+#ask-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 480px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .topbar-actions {
+    width: 100%;
+  }
+  .topbar-actions .pill {
+    flex: 1 1 auto;
+    text-align: center;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .brand-name {
+    font-size: 1rem;
+  }
+}
+
+/* ---------- Motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

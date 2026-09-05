@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Equity Research AI Assistant</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Equity Research</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" id="view-toggle" class="pill" aria-pressed="false">🗨 Current Chat Only</button>
+      <button type="button" id="new-chat" class="pill">New chat</button>
+    </div>
+  </header>
+
+  <main class="thread">
+    <div class="welcome">
+      <h1>Ask about any public company.</h1>
+      <p>Financials, earnings, dividends, filings and analyst views — in plain English.</p>
+    </div>
+
+    <div class="history" id="history"></div>
+  </main>
+
+  <div class="composer-wrap">
+    <div class="examples" id="examples">
+      <span class="chip">How much cash did Reliance make last year?</span>
+      <span class="chip">What is Apple's dividend history?</span>
+      <span class="chip">Show TCS quarterly balance sheet</span>
+      <span class="chip">What are analysts recommending for Microsoft?</span>
+    </div>
+
+    <div class="composer">
+      <input
+        type="text"
+        id="question-input"
+        placeholder="Ask about a stock's financials, earnings, or news"
+        autocomplete="off"
+      />
+      <button type="button" id="ask-btn" aria-label="Send question">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+          <path
+            d="M12 19V5M6 11l6-6 6 6"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/math.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ask.js"></script>
+<script src="js/events.js"></script>
+
+</body>
+</html>
