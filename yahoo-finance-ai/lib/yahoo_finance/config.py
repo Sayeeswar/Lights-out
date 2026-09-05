@@ -2,13 +2,20 @@
 Shared configuration: the OpenAI client/model and the map of Yahoo Finance
 capabilities the intent router is allowed to choose from.
 """
-# imprt dotenv package in python
 import os
 
-from dotenv import load_dotenv
-
 from openai import OpenAI
-load_dotenv()  # Load environment variables from .env file
+
+# Local-dev convenience only: load a .env file when python-dotenv is present.
+# In production (Vercel / Render) the platform injects env vars directly and
+# the package may not be installed, so this stays best-effort.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 
 # Reads OPENAI_API_KEY from the environment automatically.

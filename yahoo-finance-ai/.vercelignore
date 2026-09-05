@@ -1,16 +1,10 @@
-# This app's Python backend runs on Render (see render.yaml), not Vercel.
-# Vercel only serves public/ as a static site — exclude the backend so
-# Vercel's zero-config detection doesn't try to build it as a Python function.
-api/
-lib/
+# Vercel builds the Flask app in api/ask.py (see pyproject.toml
+# [tool.vercel] entrypoint) and auto-serves public/ as static assets.
+# Only local/dev cruft and Render-only files are excluded here.
 __pycache__/
-wsgi.py
-requirements.txt
-pyproject.toml
-Pipfile
-Pipfile.lock
-setup.py
-render.yaml
+*.pyc
 .env
 .env.example
-*.pyc
+.vs/
+render.yaml
+questions.md
