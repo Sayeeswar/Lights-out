@@ -9,6 +9,4 @@ numpy>=1.26.0
 # Answer formatting: model Markdown -> sanitized HTML for the chat UI.
 markdown>=3.6
 bleach>=6.1.0
-
-# Optional: only used for local .env loading (see lib/yahoo_finance/config.py).
-python-dotenv>=1.0.0
+dotenv

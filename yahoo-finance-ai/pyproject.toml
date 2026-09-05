@@ -1,6 +1,0 @@
-# Vercel's Python builder reads this to locate the Flask application.
-# The WSGI callable is `app`, defined in api/ask.py:
-#     app = Flask(__name__)
-# (wsgi.py re-exports the same object for gunicorn on Render.)
-[tool.vercel]
-entrypoint = "api/ask.py"
