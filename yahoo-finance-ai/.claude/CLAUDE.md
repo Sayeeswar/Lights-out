@@ -52,13 +52,10 @@
 
 ## File access scope
 
-- Treat `public/` as the only working directory. Do not create, edit, move,
-  rename, or delete any file outside `public/`.
-- Only `public/index.html` and `public/style.css` may be edited. Every other
-  file, including `public/app.js`, is read-only: read it to understand the
-  existing frontend behavior and DOM contract, but never change it.
-- Do not read application source outside `public/` (`api/`, `lib/`, ...) unless
-  the user explicitly asks for it in that message.
-- If a task cannot be completed within `public/index.html` and
-  `public/style.css`, stop and explain what is needed rather than working
+- Treat `public/` and `lib\` as the only working directory. Do not create, edit, move,
+  rename, or delete any file outside `public/` and `lib\`.
+- You are only going to have access to `public/` and `lib\`; all other folders will not
+  be authorized for write.
+- Do not read application source outside `public/` and `lib\`  (`api/`, `lib/`, ...) unless the user explicitly asks for it in that message.
+- If a task cannot be completed within `public\` and `lib\`, stop and explain what is needed rather than working
   around this boundary.

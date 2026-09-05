@@ -175,9 +175,9 @@ def detect_intent(question: str) -> dict:
     """
 
     prompt = f"""
-You are a stock-market intent router.
+You are a Equity Research  intent router.
 
-Determine which Yahoo Finance data is required to answer
+Determine which Yahoo Finance module is required to answer
 the user's question.
 
 User question:
