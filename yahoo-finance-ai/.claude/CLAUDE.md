@@ -52,10 +52,11 @@
 
 ## File access scope
 
-- Treat `public/` and `lib\` as the only working directory. Do not create, edit, move,
-  rename, or delete any file outside `public/` and `lib\`.
-- You are only going to have access to `public/` and `lib\`; all other folders will not
-  be authorized for write.
-- Do not read application source outside `public/` and `lib\`  (`api/`, `lib/`, ...) unless the user explicitly asks for it in that message.
-- If a task cannot be completed within `public\` and `lib\`, stop and explain what is needed rather than working
-  around this boundary.
+- Do NOT create, edit, move, rename, or delete any file inside `public/` or `lib/`.
+  These two directories are off-limits for writes.
+- Every other file and directory in the repo is in scope. You may read and modify
+  `api/`, root config files (`vercel.json`, `.vercelignore`, `pyproject.toml`,
+  `requirements.txt`, `render.yaml`, ...), and anything else outside `public/` and `lib/`.
+- Reading files inside `public/` and `lib/` is allowed; only writing to them is not.
+- If a task requires changing a file inside `public/` or `lib/`, stop and explain what
+  is needed rather than editing it.

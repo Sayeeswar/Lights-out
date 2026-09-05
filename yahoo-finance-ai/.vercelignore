@@ -6,6 +6,10 @@ lib/
 __pycache__/
 wsgi.py
 requirements.txt
+pyproject.toml
+Pipfile
+Pipfile.lock
+setup.py
 render.yaml
 .env
 .env.example
