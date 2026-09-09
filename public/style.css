@@ -557,6 +557,83 @@ body {
   }
 }
 
+/* ---------- Thinking panel (retrospective step log) ---------- */
+
+.steps {
+  margin: 10px 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.steps-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 8px 12px;
+  font: 500 12px/1 var(--sans);
+  color: var(--muted);
+  user-select: none;
+}
+.steps-summary::-webkit-details-marker {
+  display: none;
+}
+.steps[open] .steps-summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.steps-list {
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 12px;
+  font: 400 12px/1.5 var(--sans);
+  color: var(--text);
+  opacity: 0;
+  animation: step-in 260ms ease forwards;
+  animation-delay: calc(var(--i, 0) * 140ms);
+}
+
+.step-mark {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+.step-error .step-mark {
+  color: var(--error);
+}
+
+.step-label {
+  flex: 0 0 auto;
+}
+
+.step-msg {
+  font-size: 11px;
+  color: var(--error);
+}
+
+.step-time {
+  margin-left: auto;
+  font: 400 11px/1.5 var(--mono);
+  color: var(--muted);
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------- Motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -566,5 +643,8 @@ body {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  .step {
+    opacity: 1;
   }
 }

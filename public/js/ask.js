@@ -16,6 +16,7 @@ async function askQuestion(question) {
     ticker: "",
     submodule: "",
     charts: [],
+    steps: [],
   };
   conv.messages.push(message);
   conv.updatedAt = Date.now();
@@ -45,6 +46,9 @@ async function askQuestion(question) {
       message.ticker = intent.ticker || "";
       message.submodule = intent.submodule || "";
       message.charts = data.charts || [];
+      // Status + timing per pipeline stage; rendered as the "thinking"
+      // panel. Absent on an older backend -> panel simply isn't drawn.
+      message.steps = Array.isArray(data.steps) ? data.steps : [];
     }
   } catch (err) {
     message.error = "Request failed: " + String(err);

@@ -131,6 +131,7 @@ function renderMessages(conv, showBack) {
           ${tickerTags}
           ${submoduleTags}
         </div>
+        ${renderStepsPanel(m.steps)}
         <div class="answer">${answerBody}</div>
         ${chartBoxes}
       `;
@@ -148,6 +149,50 @@ function makeNote(text) {
   p.className = "empty-note";
   p.textContent = text;
   return p;
+}
+
+// Retrospective "thinking" panel: the pipeline's per-stage status + timing,
+// as sent in `data.steps`. Presentation only — the backend owns the labels,
+// the order and the durations; this just lays them out. Rows fade in
+// staggered via CSS (see `.step` in style.css) so it reads as progress even
+// though the whole array arrived in one response.
+function renderStepsPanel(steps) {
+  if (!Array.isArray(steps) || steps.length === 0) return "";
+
+  const rows = steps
+    .map((s, i) => {
+      const isError = s && s.status === "error";
+      const mark = isError ? "✗" : "✓"; // ✗ / ✓
+      const label = escapeHtml((s && (s.label || s.id)) || "");
+      const time = escapeHtml(formatDuration((s && s.duration_ms) || 0));
+      const msg =
+        isError && s && s.error
+          ? `<span class="step-msg">${escapeHtml(s.error)}</span>`
+          : "";
+      return `<li class="step${isError ? " step-error" : ""}" style="--i:${i}">
+          <span class="step-mark">${mark}</span>
+          <span class="step-label">${label}</span>
+          ${msg}
+          <span class="step-time">${time}</span>
+        </li>`;
+    })
+    .join("");
+
+  const n = steps.length;
+  return `<details class="steps" open>
+      <summary class="steps-summary">Thinking · ${n} step${n === 1 ? "" : "s"}</summary>
+      <ul class="steps-list">${rows}</ul>
+    </details>`;
+}
+
+// Format a millisecond count for a thinking-panel row: "<1ms" for an
+// instant (or unmeasurable) step, "<n>ms" below one second, and seconds
+// with two decimals above (e.g. "1.87s", "6.25s"). The `!(ms > 0)` guard
+// also catches NaN / undefined / negatives.
+function formatDuration(ms) {
+  if (!(ms > 0)) return "<1ms";
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
 }
 
 function escapeHtml(str) {

@@ -11,7 +11,7 @@ markdown-fence cleanup any more.
 import json
 
 from pydantic import BaseModel
-from agents import Agent, Runner
+from agents import Agent, Runner, trace
 
 if __package__:
     from .config import MODEL, YAHOO_MODULES
@@ -106,7 +106,8 @@ def detect_intent(question: str) -> dict:
     as a plain dict (never an Intent object -- pipeline.py mutates the
     result with intent["module"] = ...).
     """
-    result = Runner.run_sync(_intent_agent, question)
+    with trace("detect_intent", metadata={"question": question[:200]}):
+        result = Runner.run_sync(_intent_agent, question)
     data = result.final_output.model_dump()
 
     # Structured Outputs always fills parameters as

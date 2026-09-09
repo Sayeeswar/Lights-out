@@ -11,7 +11,7 @@ plain Markdown string is what RunResult.final_output already is.
 
 import json
 
-from agents import Agent, Runner
+from agents import Agent, Runner, trace
 
 from .config import MODEL
 from .statement_ordering import STATEMENT_SUBMODULES
@@ -90,5 +90,6 @@ Yahoo Finance data:
 {data_json}
 """
 
-    result = Runner.run_sync(_answer_agent, dynamic_input)
+    with trace("generate_answer", metadata={"question": question[:200]}):
+        result = Runner.run_sync(_answer_agent, dynamic_input)
     return result.final_output
