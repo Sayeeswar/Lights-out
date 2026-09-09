@@ -11,7 +11,7 @@ from openai import AsyncOpenAI
 from agents import set_default_openai_client
 
 load_dotenv()  # Load environment variables from .env file
-MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
+MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # Reads OPENAI_API_KEY from the environment automatically.
 # Set it in the Render dashboard -> Environment.

@@ -6,8 +6,8 @@
   "outputDirectory": ".",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://yahoo-finance-ai-api.onrender.com/api/:path*"
+      "source": "/api/ask",
+      "destination": "https://yahoo-finance-ai-api.onrender.com/api/ask"
     }
   ]
 }
