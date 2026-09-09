@@ -1,2 +1,10 @@
-[tool.vercel]
-entrypoint = "api\ask.py"
+# Intentionally inert. Do NOT add a [tool.vercel] section or any
+# dependencies here.
+#
+# This project's Python backend runs on Render (see ../render.yaml), not
+# Vercel. Vercel deploys this folder (public/) as its Root Directory and
+# serves it as a plain static site. A [tool.vercel] entrypoint in this
+# file makes Vercel's framework detection try to build a Flask function,
+# and the deploy fails with "No Flask entrypoint found in default
+# locations". Kept (not deleted) because public/ files must never be
+# removed.

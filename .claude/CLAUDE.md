@@ -54,12 +54,20 @@
 
 - Do NOT create, edit, move, rename, or delete any file inside `public/` or `lib/`.
   These two directories are off-limits for writes.
+- NEVER delete, move, or rename any file inside `public/` under any circumstances.
+  Vercel deploys with `public/` as its Root Directory, so it is the entire
+  deployed site -- a removed file breaks production. Any fix to Vercel or
+  frontend behaviour must be made by EDITING files within `public/`, never by
+  removing them. (Deletion stays forbidden even where an edit is authorized
+  below.)
 - EXCEPTION (OpenAI Agents SDK migration + single-ticker fetch rebuild + trace
-  grouping + retrospective "thinking" step log, authorized by the repo owner
-  2026-09-09): editing these files is permitted, and only for the migration
+  grouping + retrospective "thinking" step log + Vercel static-deploy fix,
+  authorized by the repo owner 2026-09-09): EDITING these files is permitted
+  (deletion of `public/` files is still forbidden), and only for the migration
   specified in `docs/agents-sdk-migration/`, the single-ticker rebuild of
-  `fetch.py`, the `trace()` wrapper in `pipeline.py`, and the per-step timing
-  log (`steps` array in the `/api/ask` response + its frontend panel):
+  `fetch.py`, the `trace()` wrapper in `pipeline.py`, the per-step timing log
+  (`steps` array in the `/api/ask` response + its frontend panel), and keeping
+  Vercel serving `public/` as a static site (no Flask detection):
   - `lib/yahoo_finance/config.py`
   - `lib/yahoo_finance/intent.py`
   - `lib/yahoo_finance/answer.py`
@@ -68,6 +76,8 @@
   - `public/js/ask.js`
   - `public/js/render.js`
   - `public/style.css`
+  - `public/vercel.json`
+  - `public/pyproject.toml`
   All other files under `lib/`, and all of `public/`, remain off-limits for writes.
 - Every other file and directory in the repo is in scope. You may read and modify
   `api/`, root config files (`vercel.json`, `.vercelignore`, `pyproject.toml`,
