@@ -43,7 +43,7 @@ def order_statement_periods(period_labels, today=None, annual=True, keep=6):
 
     for label in period_labels:
         try:
-            end = datetime.strptime(str(label)[:10], "%Y-%m").date()
+            end = datetime.strptime(str(label)[:7], "%Y-%m").date()
         except ValueError:
             undated.append(label)
             continue

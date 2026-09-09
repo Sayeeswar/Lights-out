@@ -1,13 +1,15 @@
 """
-Shared configuration: the OpenAI client/model and the map of Yahoo Finance
-capabilities the intent router is allowed to choose from.
+Shared configuration: registers the OpenAI client the Agents SDK will use,
+and holds the model name and the map of Yahoo Finance capabilities the
+intent router is allowed to choose from.
 """
 # imprt dotenv package in python
 import os
 
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
+from agents import set_default_openai_client
 
-from openai import OpenAI
 load_dotenv()  # Load environment variables from .env file
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 
@@ -15,7 +17,9 @@ MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 # Set it in the Render dashboard -> Environment.
 # Extra retries/timeout so a transient network blip on the host doesn't
 # surface as APIConnectionError on the first (cold-start) request.
-client = OpenAI(timeout=60.0, max_retries=4)
+# Registered once here; every Runner.run_sync(...) call anywhere in the
+# app (intent.py, answer.py) uses this client automatically.
+set_default_openai_client(AsyncOpenAI(timeout=60.0, max_retries=4))
 
 
 YAHOO_MODULES = {

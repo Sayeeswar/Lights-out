@@ -54,6 +54,17 @@
 
 - Do NOT create, edit, move, rename, or delete any file inside `public/` or `lib/`.
   These two directories are off-limits for writes.
+- EXCEPTION (OpenAI Agents SDK migration + single-ticker fetch rebuild + trace
+  grouping, authorized by the repo owner 2026-09-09): editing these five files is
+  permitted, and only for the migration specified in `docs/agents-sdk-migration/`,
+  the single-ticker rebuild of `fetch.py`, and the `trace()` wrapper in
+  `pipeline.py`:
+  - `lib/yahoo_finance/config.py`
+  - `lib/yahoo_finance/intent.py`
+  - `lib/yahoo_finance/answer.py`
+  - `lib/yahoo_finance/fetch.py`
+  - `lib/yahoo_finance/pipeline.py`
+  All other files under `lib/`, and all of `public/`, remain off-limits for writes.
 - Every other file and directory in the repo is in scope. You may read and modify
   `api/`, root config files (`vercel.json`, `.vercelignore`, `pyproject.toml`,
   `requirements.txt`, `render.yaml`, ...), and anything else outside `public/` and `lib/`.

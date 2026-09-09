@@ -2,6 +2,7 @@ flask==3.0.3
 flask-cors>=4.0.1
 gunicorn>=22.0.0
 openai>=1.40.0
+openai-agents>=0.1.0  # pin to the exact version `pip show openai-agents` reports
 yfinance>=0.2.40
 pandas>=2.2.0
 numpy>=1.26.0
