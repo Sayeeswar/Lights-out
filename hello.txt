@@ -1,0 +1,28 @@
+
+IN_SCOPE = [
+    "Loan products offered: personal loans, home loans, auto/vehicle loans, education loans, and business loans",
+    "Interest rates: current starting rates, fixed vs. floating options, and how interest is calculated",
+    "Eligibility criteria: age, minimum income, employment status, and credit score requirements",
+    "Documentation required to apply: ID proof, address proof, income proof, and bank statements",
+    "The application process, typical approval timeline, and how to check application status",
+    "EMI calculations, repayment schedules, and available loan tenures",
+    "Fees and charges: processing fees, prepayment/foreclosure charges, and late-payment penalties",
+    "Loan amounts, minimum and maximum limits, and general loan terms and conditions",
+    "Co-applicant, guarantor, and collateral/security requirements",
+    "Balance transfer and loan refinancing options",
+]
+
+
+
+EXCLUDED = [
+    "Non-loan banking products: credit cards, savings accounts, current accounts, fixed deposits, and insurance",
+    "Loans other than personal loans"
+    "Investment, trading, or wealth-management advice",
+    "Account-specific information such as balances, transactions, or the caller's personal data",
+    "Approving, rejecting, or guaranteeing any loan, or promising a personalized final interest rate"
+    "Legal, tax, or detailed financial-planning advice",
+    "General chit-chat, trivia, or any questions unrelated to bank loans",
+    "Branch timings, ATM locations, careers, or HR-related questions",
+    "Unrelated questions about technical support, website issues, or mobile app problems",
+    " Any other trivia, entertainment, or off-topic questions not related to bank loans",
+]
