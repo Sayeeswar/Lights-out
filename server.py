@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from agents import Agent, Runner
-from agents.guardrail import GuardrailFunctionOutput, OutputGuardrail
+from agents.guardrail import GuardrailFunctionOutput, InputGuardrail,input_guardrail
 from agents.realtime import RealtimeAgent, RealtimeRunner
 
 GUARDRAIL_LOG = Path(__file__).with_name("guardrail_trips.txt")
@@ -129,7 +129,7 @@ scope_checker = Agent(
     output_type=ScopeCheck,
 )
 
-
+@input_guardrail()
 async def loan_scope_guardrail(context, agent, output: str) -> GuardrailFunctionOutput:
     result = await Runner.run(scope_checker, output)
     check: ScopeCheck = result.final_output
@@ -161,7 +161,7 @@ runner = RealtimeRunner(
             },
             "turn_detection": {"type": "server_vad", "interrupt_response": True},
         },
-        "output_guardrails": [OutputGuardrail(guardrail_function=loan_scope_guardrail)],
+        "input_guardrails": [InputGuardrail(guardrail_function=loan_scope_guardrail)],
         "guardrails_settings": {"debounce_text_length": 80},
     },
 )

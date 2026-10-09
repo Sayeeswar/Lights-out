@@ -69,6 +69,8 @@ registerProcessor("pcm-processor", PCMProcessor);`;
 
 function setStatus(t) { statusEl.textContent = t; }
 
+let micMutedUntil = 0;
+
 function playChunk(arrayBuffer) {
   const pcm = new Int16Array(arrayBuffer);
   const f32 = new Float32Array(pcm.length);
@@ -81,6 +83,10 @@ function playChunk(arrayBuffer) {
   nextPlayTime = Math.max(nextPlayTime, ctx.currentTime);
   src.start(nextPlayTime);
   nextPlayTime += buffer.duration;
+  
+  // Extend the mute window until this audio chunk finishes + 400ms buffer
+  micMutedUntil = Math.max(micMutedUntil, (ctx.currentTime + buffer.duration + 1) * 1000);
+
   playing.add(src);
   src.onended = () => playing.delete(src);
 }
@@ -115,20 +121,28 @@ async function start() {
   const url = URL.createObjectURL(new Blob([workletCode], { type: "application/javascript" }));
   await ctx.audioWorklet.addModule(url);
 
-  micStream = await navigator.mediaDevices.getUserMedia({
-    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-  });
+ micStream = await navigator.mediaDevices.getUserMedia({
+  audio: {
+    channelCount: 1,
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  },
+});
   const source = ctx.createMediaStreamSource(micStream);
   workletNode = new AudioWorkletNode(ctx, "pcm-processor");
   source.connect(workletNode);
 
   ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
   ws.binaryType = "arraybuffer";
-
   ws.onopen = () => {
     setStatus("Live - start talking");
     workletNode.port.onmessage = (e) => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(e.data);
+      // Don't send mic data if audio is playing OR if we are within the 400ms tail window
+      const isMuted = playing.size > 0 || Date.now() < micMutedUntil;
+      if (ws.readyState === WebSocket.OPEN && !isMuted) {
+        ws.send(e.data);
+      }
     };
   };
   ws.onmessage = (e) => {
