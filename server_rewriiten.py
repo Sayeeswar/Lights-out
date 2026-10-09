@@ -1,15 +1,3 @@
-"""
-Loan Voice Agent - OpenAI Agents SDK edition (browser-based)
-
-Browser mic --WebSocket--> FastAPI --RealtimeSession--> OpenAI Realtime API
-Browser speaker <-WebSocket-- FastAPI <-- agent audio + transcripts
-
-Realtime VAD detects caller turns and interrupts playback; each completed
-transcript is checked by the input guardrail before a response is started.
-
-Run:  uvicorn server:app --reload     then open http://localhost:8000
-"""
-
 import asyncio
 import logging
 import os
@@ -26,6 +14,7 @@ from agents.realtime import RealtimeAgent, RealtimeRunner
 from agents.realtime.model_inputs import RealtimeModelSendRawMessage
 from tools import PERSONAL_LOAN_TOOLS
 
+
 GUARDRAIL_LOG = Path(__file__).with_name("guardrail_trips.txt")
 guardrail_logger = logging.getLogger("loan_guardrail")
 guardrail_logger.setLevel(logging.WARNING)
@@ -37,13 +26,13 @@ if not guardrail_logger.handlers:
     guardrail_logger.addHandler(guardrail_handler)
 guardrail_logger.propagate = False
 
+
+
 load_dotenv()
 if not os.getenv("OPENAI_API_KEY"):
     raise SystemExit("OPENAI_API_KEY not set - put it in .env or export it.")
 
-# ---------------------------------------------------------------
-# 1) The agent's brain - edit these for your bank
-# ---------------------------------------------------------------
+
 BANK_NAME = "SBI"
 
 IN_SCOPE = [
@@ -70,8 +59,10 @@ EXCLUDED = [
     "Any other trivia, entertainment, or off-topic questions not related to bank loans",
 ]
 
+
 in_scope_list = "\n".join(f"  - {item}" for item in IN_SCOPE)
 excluded_list = "\n".join(f"  - {item}" for item in EXCLUDED)
+
 
 INSTRUCTIONS = f"""You are the Loan Assistant for {BANK_NAME}.
 
@@ -198,16 +189,9 @@ GREETING_PROMPT = (
     "Do not add another sentence or repeat this greeting later."
 )
 
-# ---------------------------------------------------------------
-# 2) Input guardrail
-#    RealtimeAgent does not automatically run input guardrails. With automatic
-#    response creation disabled, check each completed audio transcript first,
-#    then explicitly trigger either the normal reply or a loan-only redirect.
-# ---------------------------------------------------------------
 class ScopeCheck(BaseModel):
     on_topic: bool
     reason: str
-
 
 scope_checker = Agent(
     name="SBI personal-loan input checker",
@@ -228,184 +212,4 @@ scope_checker = Agent(
     output_type=ScopeCheck,
 )
 
-
-@input_guardrail(run_in_parallel=False)
-
-async def loan_input_guardrail(
-    _context: RunContextWrapper, _agent, input: str
-) -> GuardrailFunctionOutput:
-    del _context, _agent
-    result = await Runner.run(scope_checker, input)
-    check: ScopeCheck = result.final_output
-    return GuardrailFunctionOutput(
-        output_info=check,
-        tripwire_triggered=not check.on_topic,
-    )
-
-
-OFF_TOPIC_REDIRECT = (
-    "Say exactly one sentence: I can only help clarify SBI personal-loan questions; "
-    "what would you like to know about eligibility, rates, charges, or repayment?"
-)
-GUARDRAIL_ERROR_REPLY = (
-    "Say exactly one sentence: Sorry, I could not check that request; please ask me "
-    "a question about SBI personal loans."
-)
-
-
-async def send_response(session, instructions: str | None = None) -> None:
-    response: dict = {}
-    if instructions:
-        response["instructions"] = instructions
-    message = {"type": "response.create"}
-    if response:
-        message["other_data"] = {"response": response}
-    await session.model.send_event(RealtimeModelSendRawMessage(message=message))
-
-
-async def handle_caller_turn(
-    session,
-    ws: WebSocket,
-    transcript: str,
-    lock: asyncio.Lock,
-) -> None:
-    text = (transcript or "").strip()
-    if not text:
-        return
-
-    async with lock:
-        try:
-            result = await loan_input_guardrail.run(
-                agent, text, RunContextWrapper(context=None)
-            )
-        except Exception as exc:
-            guardrail_logger.error("Input guardrail check failed: %s", exc)
-            await ws.send_json(
-                {"type": "error", "text": "Could not check your question."}
-            )
-            await send_response(session, GUARDRAIL_ERROR_REPLY)
-            return
-
-        if result.output.tripwire_triggered:
-            check: ScopeCheck = result.output.output_info
-            guardrail_logger.warning("Input guardrail triggered: %s", check.reason)
-            await ws.send_json(
-                {"type": "notice", "text": "I can only help with SBI personal loans."}
-            )
-            await send_response(session, OFF_TOPIC_REDIRECT)
-            return
-
-        await send_response(session)
-
-
-# ---------------------------------------------------------------
-# 3) Agent + Runner
-# ---------------------------------------------------------------
-agent = RealtimeAgent(
-    name="Loan Assistant",
-    instructions=INSTRUCTIONS,
-    tools=PERSONAL_LOAN_TOOLS,
-)
-
-runner = RealtimeRunner(
-    starting_agent=agent,
-    config={
-        "model_settings": {
-            "model_name": "gpt-realtime",
-            "voice": "alloy",
-            "modalities": ["audio"],
-            "input_audio_format": "pcm16",   # 24 kHz, 16-bit mono
-            "output_audio_format": "pcm16",
-            "input_audio_transcription": {
-                "model": "whisper-1",
-                "language": "en",
-            },
-            "turn_detection": {
-                "type": "semantic_vad",
-                "eagerness": "medium",
-                "interrupt_response": True,
-                "create_response": False,
-            },
-        },
-    },
-)
-
-# ---------------------------------------------------------------
-# 4) Web server
-# ---------------------------------------------------------------
-app = FastAPI()
-INDEX = Path(__file__).parent / "static" / "index.html"
-
-
-@app.get("/")
-async def index():
-    return FileResponse(INDEX)
-
-
-def extract_messages(history) -> list[dict]:
-    """Turn the SDK's history items into simple {role, text} dicts for the UI."""
-    messages = []
-    for item in history:
-        if getattr(item, "type", None) != "message":
-            continue
-        text = ""
-        for part in getattr(item, "content", None) or []:
-            text += getattr(part, "text", None) or getattr(part, "transcript", None) or ""
-        text = text.strip()
-        if text and text != GREETING_PROMPT:
-            messages.append({"id": item.item_id, "role": item.role, "text": text})
-    return messages
-
-
-@app.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket):
-    await ws.accept()
-    session = await runner.run()
-
-    async with session:
-        await session.send_message(GREETING_PROMPT)  # agent speaks first
-
-        turn_lock = asyncio.Lock()
-        turn_tasks: set[asyncio.Task] = set()
-
-        async def browser_to_agent():
-            """Mic audio (binary frames) from the browser -> the model."""
-            while True:
-                data = await ws.receive_bytes()
-                await session.send_audio(data)
-
-        async def agent_to_browser():
-            """Events from the model -> the browser."""
-            async for event in session:
-                if event.type == "audio":
-                    await ws.send_bytes(event.audio.data)
-                elif event.type == "audio_interrupted":
-                    await ws.send_json({"type": "interrupted"})
-                elif event.type == "history_updated":
-                    await ws.send_json(
-                        {"type": "history", "messages": extract_messages(event.history)}
-                    )
-                elif event.type == "raw_model_event":
-                    data = event.data
-                    if getattr(data, "type", None) == "input_audio_transcription_completed":
-                        task = asyncio.create_task(
-                            handle_caller_turn(
-                                session, ws, data.transcript, turn_lock
-                            )
-                        )
-                        turn_tasks.add(task)
-                        task.add_done_callback(turn_tasks.discard)
-                elif event.type == "error":
-                    await ws.send_json({"type": "error", "text": str(event.error)})
-
-        tasks = [
-            asyncio.create_task(browser_to_agent()),
-            asyncio.create_task(agent_to_browser()),
-        ]
-        try:
-            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        except WebSocketDisconnect:
-            pass
-        finally:
-            for t in tasks + list(turn_tasks):
-                t.cancel()
+async def context_

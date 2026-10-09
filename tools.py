@@ -8,7 +8,6 @@ Plain functions are defined first so you can test them directly.
 PERSONAL_LOAN_TOOLS at the bottom wraps them with function_tool for the Agents SDK.
 """
 
-BANK_NAME = "SBI"   # change to "Apex Bank" if you want the agent to use that name
 
 NOT_SPECIFIED = "Not specified - please confirm with a loan officer or the bank's website."
 
@@ -90,32 +89,61 @@ def _answer(area: str) -> dict:
 # 2) One function per area (the columns in your Excel file)
 # ---------------------------------------------------------------
 def get_eligibility() -> dict:
-    """Get personal loan eligibility: who can apply, age, minimum income, credit score."""
+    """Retrieve SBI personal-loan eligibility details.
+
+    Use for questions about eligible employment categories, age limits, minimum
+    income, or CIBIL score guidance. Returns the available eligibility fields;
+    it does not assess or guarantee an individual application.
+    """
     return _answer("eligibility")
 
 
 def get_documents() -> dict:
-    """Get the documents required to apply for a personal loan."""
+    """Retrieve the documents listed for an SBI personal-loan application.
+
+    Use when asked what identity/KYC, address, income, or bank-statement
+    documents may be required. Returns the available document list.
+    """
     return _answer("documents")
 
 
 def get_interest_rate() -> dict:
-    """Get personal loan interest rate: starting rate, range, and how interest is calculated."""
+    """Retrieve SBI personal-loan interest-rate and calculation information.
+
+    Use for questions about the starting rate, rate range, MCLR and spread,
+    factors affecting the rate, or how interest is calculated. Returns the
+    available rate details; the final rate depends on the applicable scheme
+    and the customer's profile.
+    """
     return _answer("interest_rate")
 
 
 def get_charges() -> dict:
-    """Get personal loan fees and charges: processing, prepayment, foreclosure, late payment, bounce."""
+    """Retrieve the listed SBI personal-loan charges and fee conditions.
+
+    Use for questions about processing fees, part-payment or prepayment,
+    foreclosure, overdue-EMI penal charges, or cheque/ECS bounces. Returns
+    available charge details, which may vary by scheme or product.
+    """
     return _answer("charges")
 
 
 def get_loan_amount() -> dict:
-    """Get the minimum and maximum personal loan amount and the income-based limits."""
+    """Retrieve SBI personal-loan amount limits and income-based constraints.
+
+    Use for questions about minimum or maximum loan amounts, repayment-capacity
+    limits, EMI/NMI ratio, or the 30-times-NMI rule. Returns the listed limits
+    and an example; an individual eligible amount is not guaranteed.
+    """
     return _answer("loan_amount")
 
 
 def get_repayment_tenure() -> dict:
-    """Get the minimum and maximum personal loan repayment tenure."""
+    """Retrieve SBI personal-loan repayment-tenure information.
+
+    Use for questions about the minimum or maximum repayment period and
+    applicable closure constraints. Returns the available tenure details.
+    """
     return _answer("repayment_tenure")
 
 
