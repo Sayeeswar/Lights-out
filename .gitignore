@@ -1,3 +1,4 @@
-"env/"
-"hello.txt"
-"terminal_chat.py"
+env/
+hello.txt
+terminal_chat.py
+.env
