@@ -39,7 +39,7 @@ if not os.getenv("OPENAI_API_KEY"):
 # ---------------------------------------------------------------
 # 1) The agent's brain - edit these for your bank
 # ---------------------------------------------------------------
-BANK_NAME = "Apex Bank"
+BANK_NAME = "SBI Bank"
 
 IN_SCOPE = [
     "Only speak in english",
