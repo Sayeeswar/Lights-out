@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loan Assistant</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1c1f24; --muted:#6b7280; --accent:#1d4ed8; --you:#e8efff; --agent:#eaf7ee; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#111418; --card:#1a1e24; --text:#e8eaed; --muted:#9aa3af; --accent:#6b9bff; --you:#1f2b46; --agent:#1b3226; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text);
+         display:flex; justify-content:center; padding:24px 12px; }
+  main { width:100%; max-width:560px; background:var(--card); border-radius:14px; padding:20px;
+         display:flex; flex-direction:column; gap:14px; }
+  h1 { margin:0; font-size:1.2rem; }
+  #status { color:var(--muted); font-size:.9rem; }
+  button { padding:12px; border:0; border-radius:10px; font-size:1rem; cursor:pointer;
+           background:var(--accent); color:#fff; }
+  button.stop { background:#b91c1c; }
+  #log { display:flex; flex-direction:column; gap:8px; min-height:240px; max-height:55vh; overflow-y:auto; }
+  .msg { padding:10px 12px; border-radius:10px; max-width:88%; line-height:1.4; }
+  .user { background:var(--you); align-self:flex-end; }
+  .assistant { background:var(--agent); align-self:flex-start; }
+  .notice { color:#b45309; font-size:.85rem; align-self:center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Personal Loan Assistant</h1>
+  <div id="status">Idle</div>
+  <button id="toggle">Start call</button>
+  <div id="log"></div>
+</main>
+
+<script>
+const SAMPLE_RATE = 24000;           // must match the Realtime API
+const toggle = document.getElementById("toggle");
+const statusEl = document.getElementById("status");
+const logEl = document.getElementById("log");
+
+let ws, ctx, micStream, workletNode, nextPlayTime = 0;
+const playing = new Set();           // active audio sources (so we can cut them off)
+
+// AudioWorklet: converts mic float32 -> 16-bit PCM chunks
+const workletCode = `
+class PCMProcessor extends AudioWorkletProcessor {
+  constructor() { super(); this.buf = []; this.len = 0; }
+  process(inputs) {
+    const ch = inputs[0][0];
+    if (!ch) return true;
+    this.buf.push(new Float32Array(ch)); this.len += ch.length;
+    if (this.len >= 2400) {          // ~100 ms at 24 kHz
+      const all = new Float32Array(this.len); let o = 0;
+      for (const b of this.buf) { all.set(b, o); o += b.length; }
+      const pcm = new Int16Array(all.length);
+      for (let i = 0; i < all.length; i++) {
+        const s = Math.max(-1, Math.min(1, all[i]));
+        pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
+      this.port.postMessage(pcm.buffer, [pcm.buffer]);
+      this.buf = []; this.len = 0;
+    }
+    return true;
+  }
+}
+registerProcessor("pcm-processor", PCMProcessor);`;
+
+function setStatus(t) { statusEl.textContent = t; }
+
+let micMutedUntil = 0;
+
+function playChunk(arrayBuffer) {
+  const pcm = new Int16Array(arrayBuffer);
+  const f32 = new Float32Array(pcm.length);
+  for (let i = 0; i < pcm.length; i++) f32[i] = pcm[i] / 0x8000;
+  const buffer = ctx.createBuffer(1, f32.length, SAMPLE_RATE);
+  buffer.copyToChannel(f32, 0);
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  src.connect(ctx.destination);
+  nextPlayTime = Math.max(nextPlayTime, ctx.currentTime);
+  src.start(nextPlayTime);
+  nextPlayTime += buffer.duration;
+  
+  // Extend the mute window until this audio chunk finishes + 400ms buffer
+  micMutedUntil = Math.max(micMutedUntil, (ctx.currentTime + buffer.duration + 1) * 1000);
+
+  playing.add(src);
+  src.onended = () => playing.delete(src);
+}
+
+function stopPlayback() {            // used when the caller interrupts
+  playing.forEach(s => { try { s.stop(); } catch {} });
+  playing.clear();
+  nextPlayTime = 0;
+}
+
+function renderHistory(messages) {
+  logEl.querySelectorAll(".msg").forEach(n => n.remove());
+  for (const m of messages) {
+    const div = document.createElement("div");
+    div.className = "msg " + (m.role === "user" ? "user" : "assistant");
+    div.textContent = m.text;
+    logEl.appendChild(div);
+  }
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function addNotice(text) {
+  const div = document.createElement("div");
+  div.className = "notice"; div.textContent = text;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function start() {
+  ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
+  await ctx.resume();
+  const url = URL.createObjectURL(new Blob([workletCode], { type: "application/javascript" }));
+  await ctx.audioWorklet.addModule(url);
+
+ micStream = await navigator.mediaDevices.getUserMedia({
+  audio: {
+    channelCount: 1,
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  },
+});
+  const source = ctx.createMediaStreamSource(micStream);
+  workletNode = new AudioWorkletNode(ctx, "pcm-processor");
+  source.connect(workletNode);
+
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  ws.binaryType = "arraybuffer";
+  ws.onopen = () => {
+    setStatus("Live - start talking");
+    workletNode.port.onmessage = (e) => {
+      // Don't send mic data if audio is playing OR if we are within the 400ms tail window
+      const isMuted = playing.size > 0 || Date.now() < micMutedUntil;
+      if (ws.readyState === WebSocket.OPEN && !isMuted) {
+        ws.send(e.data);
+      }
+    };
+  };
+  ws.onmessage = (e) => {
+    if (e.data instanceof ArrayBuffer) return playChunk(e.data);
+    const msg = JSON.parse(e.data);
+    if (msg.type === "history") renderHistory(msg.messages);
+    else if (msg.type === "interrupted") stopPlayback();
+    else if (msg.type === "notice") addNotice(msg.text);
+    else if (msg.type === "error") addNotice("Error: " + msg.text);
+  };
+  ws.onclose = stop;
+
+  toggle.textContent = "End call";
+  toggle.classList.add("stop");
+}
+
+function stop() {
+  stopPlayback();
+  if (ws && ws.readyState <= 1) ws.close();
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  if (ctx) ctx.close();
+  ws = ctx = micStream = workletNode = null;
+  toggle.textContent = "Start call";
+  toggle.classList.remove("stop");
+  setStatus("Idle");
+}
+
+toggle.onclick = () => (ws ? stop() : start().catch(err => { addNotice(err.message); stop(); }));
+</script>
+</body>
+</html>
